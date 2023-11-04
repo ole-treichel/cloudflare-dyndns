@@ -62,6 +62,10 @@ type DnsRecordResponse struct {
 	Result  []DnsRecord       `json:"result"`
 	Errors  []CloudflareError `json:"errors"`
 }
+type UpdateRecordResponse struct {
+	Success bool              `json:"success"`
+	Errors  []CloudflareError `json:"errors"`
+}
 
 func (c *CloudflareClient) GetDnsRecords(zoneId string) (resp DnsRecordResponse, err error) {
 	endpoint := fmt.Sprintf("zones/%s/dns_records", zoneId)
@@ -88,11 +92,6 @@ func (c *CloudflareClient) GetDnsRecords(zoneId string) (resp DnsRecordResponse,
 	}
 
 	return resp, err
-}
-
-type UpdateRecordResponse struct {
-	Success bool              `json:"success"`
-	Errors  []CloudflareError `json:"errors"`
 }
 
 func (c *CloudflareClient) UpdateDnsRecord(zoneId, dnsId, name, content string) (resp UpdateRecordResponse, err error) {

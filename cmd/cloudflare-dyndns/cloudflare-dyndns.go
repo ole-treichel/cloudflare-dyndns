@@ -11,7 +11,6 @@ import (
 	cf "github.com/ole-treichel/cloudflare-dyndns/internal/cloudflare"
 )
 
-// /dyndns?token=token&email=email&zone_id=zone-id&domain=a.a&domain=b.b&ip=69.69.69.69
 func getDynDns(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
 	zoneId := r.URL.Query().Get("zone_id")
