@@ -75,9 +75,13 @@ func getDynDns(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	http.HandleFunc("/dyndns", getDynDns)
+	httpPort := os.Getenv("PORT")
+	if httpPort == "" {
+		httpPort = "8000"
+	}
 
-	fmt.Printf("Server listening on http://0.0.0.0:8000\n")
-	err := http.ListenAndServe(":8000", nil)
+	fmt.Printf("Server listening on http://0.0.0.0:%s\n", httpPort)
+	err := http.ListenAndServe(":"+httpPort, nil)
 
 	if errors.Is(err, http.ErrServerClosed) {
 		fmt.Printf("Server closed")
