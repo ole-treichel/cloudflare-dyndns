@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"slices"
@@ -46,6 +47,7 @@ func getDynDns(w http.ResponseWriter, r *http.Request) {
 	resp, err := client.GetDnsRecords(zoneId)
 
 	if err != nil {
+		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		io.WriteString(w, "Internal Server Error")
 		return
@@ -54,15 +56,16 @@ func getDynDns(w http.ResponseWriter, r *http.Request) {
 	for _, record := range resp.Result {
 		if slices.Contains(domains, record.Name) {
 			if record.Content != ip {
-				fmt.Println(fmt.Sprintf("%s is out of date. old value: %s, new value: %s", record.Name, record.Content, ip))
+				log.Println(fmt.Sprintf("%s is out of date. old value: %s, new value: %s", record.Name, record.Content, ip))
 				_, err := client.UpdateDnsRecord(zoneId, record.Id, record.Name, ip)
 
 				if err != nil {
+					log.Println(err)
 					w.WriteHeader(http.StatusInternalServerError)
 					io.WriteString(w, "Internal Server Error")
 					return
 				} else {
-					fmt.Println(fmt.Sprintf("%s updated to %s", record.Name, ip))
+					log.Println(fmt.Sprintf("%s updated to %s", record.Name, ip))
 				}
 			}
 		}
