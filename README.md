@@ -15,7 +15,7 @@ services:
     restart: always
     image: "ghcr.io/ole-treichel/cloudflare-dyndns:latest"
     volumes:
-        - .config.json/config.json
+        - ./config.json:/config.json
     ## if host network ist preferable
     # network_mode: "host"
     # environment:
