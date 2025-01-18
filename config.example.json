@@ -1,0 +1,12 @@
+{
+  "domainConfigs": [
+    {
+      "zoneId": "",
+      "domains": [""]
+    },
+    {
+      "zoneId": "",
+      "domains": [""]
+    }
+  ]
+}

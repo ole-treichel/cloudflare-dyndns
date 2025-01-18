@@ -10,23 +10,18 @@ import (
 	"slices"
 
 	cf "github.com/ole-treichel/cloudflare-dyndns/internal/cloudflare"
+	c "github.com/ole-treichel/cloudflare-dyndns/internal/config"
 )
+
+var config c.Config
 
 func getDynDns(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
-	zoneId := r.URL.Query().Get("zone_id")
 	ip := r.URL.Query().Get("ip")
-	domains := r.URL.Query()["domain"]
 
 	if token == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		io.WriteString(w, "Error: token param is required")
-		return
-	}
-
-	if zoneId == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		io.WriteString(w, "Error: zone_id param is required")
 		return
 	}
 
@@ -36,36 +31,32 @@ func getDynDns(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(domains) == 0 {
-		w.WriteHeader(http.StatusBadRequest)
-		io.WriteString(w, "Error: domain param is required")
-		return
-	}
-
 	client := cf.NewClient(token)
 
-	resp, err := client.GetDnsRecords(zoneId)
+	for _, domainConfig := range config.DomainConfigs {
+		resp, err := client.GetDnsRecords(domainConfig.ZoneId)
 
-	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		io.WriteString(w, "Internal Server Error")
-		return
-	}
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			io.WriteString(w, "Internal Server Error")
+			return
+		}
 
-	for _, record := range resp.Result {
-		if slices.Contains(domains, record.Name) {
-			if record.Content != ip {
-				log.Println(fmt.Sprintf("%s is out of date. old value: %s, new value: %s", record.Name, record.Content, ip))
-				_, err := client.UpdateDnsRecord(zoneId, record.Id, record.Name, ip)
+		for _, record := range resp.Result {
+			if slices.Contains(domainConfig.Domains, record.Name) {
+				if record.Content != ip {
+					log.Println(fmt.Sprintf("%s is out of date. old value: %s, new value: %s", record.Name, record.Content, ip))
+					_, err := client.UpdateDnsRecord(domainConfig.ZoneId, record.Id, record.Name, ip)
 
-				if err != nil {
-					log.Println(err)
-					w.WriteHeader(http.StatusInternalServerError)
-					io.WriteString(w, "Internal Server Error")
-					return
-				} else {
-					log.Println(fmt.Sprintf("%s updated to %s", record.Name, ip))
+					if err != nil {
+						log.Println(err)
+						w.WriteHeader(http.StatusInternalServerError)
+						io.WriteString(w, "Internal Server Error")
+						return
+					} else {
+						log.Println(fmt.Sprintf("%s updated to %s", record.Name, ip))
+					}
 				}
 			}
 		}
@@ -77,6 +68,13 @@ func getDynDns(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	var err error
+	config, err = c.GetConfig()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	http.HandleFunc("/dyndns", getDynDns)
 	httpPort := os.Getenv("PORT")
 	if httpPort == "" {
@@ -84,7 +82,7 @@ func main() {
 	}
 
 	fmt.Printf("Server listening on http://0.0.0.0:%s\n", httpPort)
-	err := http.ListenAndServe(":"+httpPort, nil)
+	err = http.ListenAndServe(":"+httpPort, nil)
 
 	if errors.Is(err, http.ErrServerClosed) {
 		fmt.Printf("Server closed")
